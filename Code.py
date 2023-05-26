@@ -1,7 +1,6 @@
 #import Library 
 from pettingzoo.classic import connect_four_v3
 
-
 # Create Environment
 env = connect_four_v3.env(render_mode="human")
 env.reset()
@@ -13,48 +12,49 @@ def get_material_score(observation, player):
     one_count = 0
     two_count = 0
     three_count = 0
+    observation = observation[:, :, player]
 
-    for row in observation[:, :, player]:
+    for row in observation:
         # check horizontal lines
         for i in range(len(row) - 3):
-            sub_list = row[i:i+4]
-            if sub_list.count(player) == 1 and sub_list.count(None) == 3:
+            sub_list = list(row[i:i+4])
+            if sub_list.count(1) == 1 and sub_list.count(0) == 3:
                 one_count += 1
-            elif sub_list.count(player) == 2 and sub_list.count(None) == 2:
+            elif sub_list.count(1) == 2 and sub_list.count(0) == 2:
                 two_count += 1
-            elif sub_list.count(player) == 3 and sub_list.count(None) == 1:
+            elif sub_list.count(1) == 3 and sub_list.count(0) == 1:
                 three_count += 1
 
     for col in range(len(observation[0])):
         # check vertical lines
         for i in range(len(observation) - 3):
             sub_list = [observation[j][col] for j in range(i, i+4)]
-            if sub_list.count(player) == 1 and sub_list.count(None) == 3:
+            if sub_list.count(1) == 1 and sub_list.count(0) == 3:
                 one_count += 1
-            elif sub_list.count(player) == 2 and sub_list.count(None) == 2:
+            elif sub_list.count(1) == 2 and sub_list.count(0) == 2:
                 two_count += 1
-            elif sub_list.count(player) == 3 and sub_list.count(None) == 1:
+            elif sub_list.count(1) == 3 and sub_list.count(0) == 1:
                 three_count += 1
 
     for i in range(len(observation) - 3):
         # check diagonal lines (top-left to bottom-right)
         for j in range(len(observation[0]) - 3):
             sub_list = [observation[i+k][j+k] for k in range(4)]
-            if sub_list.count(player) == 1 and sub_list.count(None) == 3:
+            if sub_list.count(1) == 1 and sub_list.count(0) == 3:
                 one_count += 1
-            elif sub_list.count(player) == 2 and sub_list.count(None) == 2:
+            elif sub_list.count(1) == 2 and sub_list.count(0) == 2:
                 two_count += 1
-            elif sub_list.count(player) == 3 and sub_list.count(None) == 1:
+            elif sub_list.count(1) == 3 and sub_list.count(0) == 1:
                 three_count += 1
 
         # check diagonal lines (bottom-left to top-right)
         for j in range(len(observation[0]) - 3):
             sub_list = [observation[i+3-k][j+k] for k in range(4)]
-            if sub_list.count(player) == 1 and sub_list.count(None) == 3:
+            if sub_list.count(1) == 1 and sub_list.count(0) == 3:
                 one_count += 1
-            elif sub_list.count(player) == 2 and sub_list.count(None) == 2:
+            elif sub_list.count(1) == 2 and sub_list.count(0) == 2:
                 two_count += 1
-            elif sub_list.count(player) == 3 and sub_list.count(None) == 1:
+            elif sub_list.count(1) == 3 and sub_list.count(0) == 1:
                 three_count += 1
     
     # calculate the total material score for the player
@@ -67,11 +67,10 @@ def heuristic(observation, player):
     value = my_material - opponent_material
     return value
     
-
 def possible_moves(observation):
     moves = []
     for i in range(7):
-        if observation['action_mask'] == 1:
+        if observation['action_mask'][i] == 1:
             moves.append(i)
     return moves
 
@@ -100,14 +99,15 @@ def minimax(observation, depth, termination, truncation, maximize_player, alpha,
         return value
     
 def make_move(observation, move, player):
-    new_observation = observation
-    if new_observation['observation'][6, move, :] == 1:
-        new_observation['action_mask'][move] = 0
+    new_observation = observation.copy()
 
-    for i in range(6):
-        if all(elem == 0 for elem in new_observation[i, move]):
-            new_observation[i, move, player] = 1
+    for i in range(5, -1, -1):
+        if all(elem == 0 for elem in new_observation['observation'][i, move]):
+            new_observation['observation'][i][move][player] = 1
             break
+
+    if any(elem == 1 for elem in new_observation['observation'][0][move]):
+        new_observation['action_mask'][move] = 0
         
     return new_observation
 
@@ -117,37 +117,14 @@ for agent in env.agent_iter():
 
     if termination or truncation:
         action = None
+        break
 
     else:
         if agent == 'player_0':
-            action = minimax(observation, 3, termination, truncation, True, float('-inf'), float('inf'))
+            action = minimax(observation, 6, termination, truncation, True, float('-inf'), float('inf'))
         else:
             action = int(input("Enter your action(0-6): "))
 
-    env.step(action)
+    env.step(int(action))
 
 env.close()
-
-# def max_value(observation, alpha, beta, depth, termination, truncation):
-#     if depth == 0 or termination or truncation:
-#         return heuristic(observation)
-#     value = float('-inf')
-#     for move in possible_moves(observation):
-#         new_observation = make_move(observation, move)
-#         value = max(value, min_value(new_observation, alpha, beta, depth-1))
-#         alpha = max(alpha, value)
-#         if beta <= alpha:
-#             break
-#     return value
-
-# def min_value(observation, alpha, beta, depth, termination, truncation):
-#     if depth == 0 or termination or truncation:
-#         return heuristic(observation)
-#     value = float('inf')
-#     for move in possible_moves(observation):
-#         new_observation = make_move(observation, move)
-#         value = min(value, max_value(new_observation, alpha, beta, depth-1))
-#         beta = min(beta, value)
-#         if beta <= alpha:
-#             break
-#     return value
