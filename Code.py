@@ -84,6 +84,7 @@ def minimax(observation, depth, termination, truncation, maximize_player, alpha,
             new_observation = make_move(observation, move, int(maximize_player))
             value = max(value, minimax(new_observation, depth-1, termination, truncation, False, alpha, betha))
             alpha = max(alpha, value)
+            observation = undo_move(observation, move, int(maximize_player))
             if betha <= alpha:
                 break
         return value
@@ -91,9 +92,10 @@ def minimax(observation, depth, termination, truncation, maximize_player, alpha,
     else:
         value = float('inf')
         for move in possible_moves(observation):
-            new_observation = make_move(observation, move, int(not maximize_player))
+            new_observation = make_move(observation, move, int(maximize_player))
             value = min(value, minimax(new_observation, depth-1, termination, truncation, True, alpha, betha))
             betha = min(betha, value)
+            observation = undo_move(observation, move, int(maximize_player))
             if betha <= alpha:
                 break
         return value
@@ -110,6 +112,20 @@ def make_move(observation, move, player):
         new_observation['action_mask'][move] = 0
         
     return new_observation
+
+
+def undo_move(observation, move, player):
+    old_observaion = observation.copy()
+
+    for i in range(6):
+        if old_observaion['observation'][i][move][player] == 1:
+            old_observaion['observation'][i][move][player] = 0
+            break
+
+    if all(elem == 0 for elem in old_observaion['observation'][0][move]):
+        old_observaion['action_mask'][move] = 1
+        
+    return old_observaion
 
 for agent in env.agent_iter():
 
