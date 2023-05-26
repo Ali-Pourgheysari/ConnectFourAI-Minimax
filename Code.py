@@ -12,6 +12,7 @@ def get_material_score(observation, player):
     one_count = 0
     two_count = 0
     three_count = 0
+    four_count = 0
     observation = observation[:, :, player]
 
     for row in observation:
@@ -24,6 +25,8 @@ def get_material_score(observation, player):
                 two_count += 1
             elif sub_list.count(1) == 3 and sub_list.count(0) == 1:
                 three_count += 1
+            elif sub_list.count(1) == 4 and sub_list.count(0) == 0:
+                four_count += 1
 
     for col in range(len(observation[0])):
         # check vertical lines
@@ -35,6 +38,8 @@ def get_material_score(observation, player):
                 two_count += 1
             elif sub_list.count(1) == 3 and sub_list.count(0) == 1:
                 three_count += 1
+            elif sub_list.count(1) == 4 and sub_list.count(0) == 0:
+                four_count += 1
 
     for i in range(len(observation) - 3):
         # check diagonal lines (top-left to bottom-right)
@@ -46,6 +51,8 @@ def get_material_score(observation, player):
                 two_count += 1
             elif sub_list.count(1) == 3 and sub_list.count(0) == 1:
                 three_count += 1
+            elif sub_list.count(1) == 4 and sub_list.count(0) == 0:
+                four_count += 1
 
         # check diagonal lines (bottom-left to top-right)
         for j in range(len(observation[0]) - 3):
@@ -56,9 +63,11 @@ def get_material_score(observation, player):
                 two_count += 1
             elif sub_list.count(1) == 3 and sub_list.count(0) == 1:
                 three_count += 1
+            elif sub_list.count(1) == 4 and sub_list.count(0) == 0:
+                four_count += 1
     
     # calculate the total material score for the player
-    material_score = 0.1*one_count + 0.3*two_count + 0.9*three_count
+    material_score = 0.1*one_count + 0.3*two_count + 0.9*three_count + 1000*four_count
     return material_score
 
 def heuristic(observation, player):
