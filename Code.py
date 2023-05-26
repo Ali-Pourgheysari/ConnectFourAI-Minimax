@@ -1,13 +1,71 @@
 #import Library 
 from pettingzoo.classic import connect_four_v3
-import numpy as np
 
 
 # Create Environment
 env = connect_four_v3.env(render_mode="human")
 env.reset()
 
-def heuristic(observation):
+
+
+def get_material_score(observation, player):
+    # initialize counts for each line length
+    one_count = 0
+    two_count = 0
+    three_count = 0
+
+    for row in observation[:, :, player]:
+        # check horizontal lines
+        for i in range(len(row) - 3):
+            sub_list = row[i:i+4]
+            if sub_list.count(player) == 1 and sub_list.count(None) == 3:
+                one_count += 1
+            elif sub_list.count(player) == 2 and sub_list.count(None) == 2:
+                two_count += 1
+            elif sub_list.count(player) == 3 and sub_list.count(None) == 1:
+                three_count += 1
+
+    for col in range(len(observation[0])):
+        # check vertical lines
+        for i in range(len(observation) - 3):
+            sub_list = [observation[j][col] for j in range(i, i+4)]
+            if sub_list.count(player) == 1 and sub_list.count(None) == 3:
+                one_count += 1
+            elif sub_list.count(player) == 2 and sub_list.count(None) == 2:
+                two_count += 1
+            elif sub_list.count(player) == 3 and sub_list.count(None) == 1:
+                three_count += 1
+
+    for i in range(len(observation) - 3):
+        # check diagonal lines (top-left to bottom-right)
+        for j in range(len(observation[0]) - 3):
+            sub_list = [observation[i+k][j+k] for k in range(4)]
+            if sub_list.count(player) == 1 and sub_list.count(None) == 3:
+                one_count += 1
+            elif sub_list.count(player) == 2 and sub_list.count(None) == 2:
+                two_count += 1
+            elif sub_list.count(player) == 3 and sub_list.count(None) == 1:
+                three_count += 1
+
+        # check diagonal lines (bottom-left to top-right)
+        for j in range(len(observation[0]) - 3):
+            sub_list = [observation[i+3-k][j+k] for k in range(4)]
+            if sub_list.count(player) == 1 and sub_list.count(None) == 3:
+                one_count += 1
+            elif sub_list.count(player) == 2 and sub_list.count(None) == 2:
+                two_count += 1
+            elif sub_list.count(player) == 3 and sub_list.count(None) == 1:
+                three_count += 1
+    
+    # calculate the total material score for the player
+    material_score = 0.1*one_count + 0.3*two_count + 0.9*three_count
+    return material_score
+
+def heuristic(observation, player):
+    my_material = get_material_score(observation['observation'], player)
+    opponent_material = get_material_score(observation['observation'], 1-player)
+    value = my_material - opponent_material
+    return value
     
 
 def possible_moves(observation):
@@ -19,12 +77,12 @@ def possible_moves(observation):
 
 def minimax(observation, depth, termination, truncation, maximize_player, alpha, betha):
     if depth == 0 or termination or truncation:
-        return heuristic(observation)
+        return heuristic(observation, int(not maximize_player))
     
     if maximize_player:
         value = float('-inf')
         for move in possible_moves(observation):
-            new_observation = make_move(observation, move, 0)
+            new_observation = make_move(observation, move, int(maximize_player))
             value = max(value, minimax(new_observation, depth-1, termination, truncation, False, alpha, betha))
             alpha = max(alpha, value)
             if betha <= alpha:
@@ -34,7 +92,7 @@ def minimax(observation, depth, termination, truncation, maximize_player, alpha,
     else:
         value = float('inf')
         for move in possible_moves(observation):
-            new_observation = make_move(observation, move, 1)
+            new_observation = make_move(observation, move, int(not maximize_player))
             value = min(value, minimax(new_observation, depth-1, termination, truncation, True, alpha, betha))
             betha = min(betha, value)
             if betha <= alpha:
