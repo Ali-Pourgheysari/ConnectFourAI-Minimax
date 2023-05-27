@@ -1,70 +1,64 @@
 #import Library 
 from pettingzoo.classic import connect_four_v3
+import numpy as np
 
 # Create Environment
 env = connect_four_v3.env(render_mode="human")
 env.reset()
 
+def count_sublists_1s(lst):
+    counts = []
+    count = 0
 
+    for num in lst:
+        if num == 1:
+            count += 1
+        else:
+            if count > 0:
+                counts.append(count)
+            count = 0
+
+    if count > 0:
+        counts.append(count)
+
+    return counts
 
 def get_material_score(observation, player):
     # initialize counts for each line length
-    one_count = 0
-    two_count = 0
-    three_count = 0
-    four_count = 0
     observation = observation[:, :, player]
 
-    for row in observation:
-        # check horizontal lines
-        for i in range(len(row) - 3):
-            sub_list = list(row[i:i+4])
-            if sub_list.count(1) == 1 and sub_list.count(0) == 3:
-                one_count += 1
-            elif sub_list.count(1) == 2 and sub_list.count(0) == 2:
-                two_count += 1
-            elif sub_list.count(1) == 3 and sub_list.count(0) == 1:
-                three_count += 1
-            elif sub_list.count(1) == 4 and sub_list.count(0) == 0:
-                four_count += 1
+    output = []
+    # Count sublists of 1s in rows
+    row_counts = [count_sublists_1s(row) for row in observation]
 
-    for col in range(len(observation[0])):
-        # check vertical lines
-        for i in range(len(observation) - 3):
-            sub_list = [observation[j][col] for j in range(i, i+4)]
-            if sub_list.count(1) == 1 and sub_list.count(0) == 3:
-                one_count += 1
-            elif sub_list.count(1) == 2 and sub_list.count(0) == 2:
-                two_count += 1
-            elif sub_list.count(1) == 3 and sub_list.count(0) == 1:
-                three_count += 1
-            elif sub_list.count(1) == 4 and sub_list.count(0) == 0:
-                four_count += 1
+    for i, counts in enumerate(row_counts):
+        output += counts
 
-    for i in range(len(observation) - 3):
-        # check diagonal lines (top-left to bottom-right)
-        for j in range(len(observation[0]) - 3):
-            sub_list = [observation[i+k][j+k] for k in range(4)]
-            if sub_list.count(1) == 1 and sub_list.count(0) == 3:
-                one_count += 1
-            elif sub_list.count(1) == 2 and sub_list.count(0) == 2:
-                two_count += 1
-            elif sub_list.count(1) == 3 and sub_list.count(0) == 1:
-                three_count += 1
-            elif sub_list.count(1) == 4 and sub_list.count(0) == 0:
-                four_count += 1
+    # Count sublists of 1s in columns
+    col_counts = [count_sublists_1s(observation[:, i]) for i in range(observation.shape[1])]
 
-        # check diagonal lines (bottom-left to top-right)
-        for j in range(len(observation[0]) - 3):
-            sub_list = [observation[i+3-k][j+k] for k in range(4)]
-            if sub_list.count(1) == 1 and sub_list.count(0) == 3:
-                one_count += 1
-            elif sub_list.count(1) == 2 and sub_list.count(0) == 2:
-                two_count += 1
-            elif sub_list.count(1) == 3 and sub_list.count(0) == 1:
-                three_count += 1
-            elif sub_list.count(1) == 4 and sub_list.count(0) == 0:
-                four_count += 1
+    for i, counts in enumerate(col_counts):
+        output += counts
+
+    # Count sublists of 1s in diagonals
+    diagonal_counts = []
+    anti_diagonal_counts = []
+    for i in range(observation.shape[0]):
+        diagonal_counts.append(count_sublists_1s(np.diagonal(observation, offset=i)))
+        diagonal_counts.append(count_sublists_1s(np.diagonal(observation, offset=-i)))
+        anti_diagonal_counts.append(count_sublists_1s(np.diagonal(np.fliplr(observation), offset=i)))
+        anti_diagonal_counts.append(count_sublists_1s(np.diagonal(np.fliplr(observation), offset=-i)))
+
+    for i, counts in enumerate(diagonal_counts):
+        output += counts
+
+    for i, counts in enumerate(anti_diagonal_counts):
+        output += counts
+
+    one_count = output.count(1)
+    two_count = output.count(2)
+    three_count = output.count(3)
+    four_count = output.count(4)
     
     # calculate the total material score for the player
     material_score = 0.1*one_count + 0.3*two_count + 0.9*three_count + 1000*four_count
@@ -124,17 +118,17 @@ def make_move(observation, move, player):
 
 
 def undo_move(observation, move, player):
-    old_observaion = observation.copy()
+    old_observation = observation.copy()
 
     for i in range(6):
-        if old_observaion['observation'][i][move][player] == 1:
-            old_observaion['observation'][i][move][player] = 0
+        if old_observation['observation'][i][move][player] == 1:
+            old_observation['observation'][i][move][player] = 0
             break
 
-    if all(elem == 0 for elem in old_observaion['observation'][0][move]):
-        old_observaion['action_mask'][move] = 1
+    if all(elem == 0 for elem in old_observation['observation'][0][move]):
+        old_observation['action_mask'][move] = 1
         
-    return old_observaion
+    return old_observation
 
 for agent in env.agent_iter():
 
@@ -142,10 +136,9 @@ for agent in env.agent_iter():
 
     if termination or truncation:
         action = None
-        break
 
     else:
-        if agent == 'player_0':
+        if agent == 'player_1':
             action = minimax(observation, 6, termination, truncation, True, float('-inf'), float('inf'))
         else:
             action = int(input("Enter your action(0-6): "))
