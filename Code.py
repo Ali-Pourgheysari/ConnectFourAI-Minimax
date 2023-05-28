@@ -1,6 +1,7 @@
 #import Library 
 from pettingzoo.classic import connect_four_v3
 import numpy as np
+import time
 
 # Create Environment
 env = connect_four_v3.env(render_mode="human")
@@ -65,7 +66,7 @@ def get_material_score(observation, player):
     return material_score
 
 def heuristic(observation, player):
-    my_material = get_material_score(observation['observation'], 1-player) + 0.1
+    my_material = get_material_score(observation['observation'], 1-player)
     opponent_material = get_material_score(observation['observation'], player)
     value = my_material - opponent_material
     return value
@@ -150,11 +151,12 @@ for agent in env.agent_iter():
             print("Player 2 wins!")
         else:
             print("Player 1 wins!")
+        time.sleep(5)
         break
 
     else:
         if agent == 'player_0':
-            action, _ = minimax(observation, 2, termination, truncation, True, float('-inf'), float('inf'))
+            action, _ = minimax(observation, 5, termination, truncation, True, float('-inf'), float('inf'))
         else:
             action = int(input("Enter your action(0-6): "))
 
