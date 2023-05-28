@@ -6,7 +6,7 @@ import numpy as np
 env = connect_four_v3.env(render_mode="human")
 env.reset()
 
-def count_sublists_1s(lst):
+def count_sublists(lst):
     counts = []
     count = 0
 
@@ -29,13 +29,13 @@ def get_material_score(observation, player):
 
     output = []
     # Count sublists of 1s in rows
-    row_counts = [count_sublists_1s(row) for row in observation]
+    row_counts = [count_sublists(row) for row in observation]
 
     for i, counts in enumerate(row_counts):
         output += counts
 
     # Count sublists of 1s in columns
-    col_counts = [count_sublists_1s(observation[:, i]) for i in range(observation.shape[1])]
+    col_counts = [count_sublists(observation[:, i]) for i in range(observation.shape[1])]
 
     for i, counts in enumerate(col_counts):
         output += counts
@@ -44,10 +44,10 @@ def get_material_score(observation, player):
     diagonal_counts = []
     anti_diagonal_counts = []
     for i in range(observation.shape[0]):
-        diagonal_counts.append(count_sublists_1s(np.diagonal(observation, offset=i)))
-        diagonal_counts.append(count_sublists_1s(np.diagonal(observation, offset=-i)))
-        anti_diagonal_counts.append(count_sublists_1s(np.diagonal(np.fliplr(observation), offset=i)))
-        anti_diagonal_counts.append(count_sublists_1s(np.diagonal(np.fliplr(observation), offset=-i)))
+        diagonal_counts.append(count_sublists(np.diagonal(observation, offset=i)))
+        diagonal_counts.append(count_sublists(np.diagonal(observation, offset=-i)))
+        anti_diagonal_counts.append(count_sublists(np.diagonal(np.fliplr(observation), offset=i)))
+        anti_diagonal_counts.append(count_sublists(np.diagonal(np.fliplr(observation), offset=-i)))
 
     for i, counts in enumerate(diagonal_counts):
         output += counts
@@ -55,18 +55,18 @@ def get_material_score(observation, player):
     for i, counts in enumerate(anti_diagonal_counts):
         output += counts
 
-    one_count = output.count(1)
+    # count the number of 2s, 3s, and 4s
     two_count = output.count(2)
     three_count = output.count(3)
     four_count = output.count(4)
     
     # calculate the total material score for the player
-    material_score = 0.1*one_count + 0.3*two_count + 0.9*three_count + 1000*four_count
+    material_score = 0.3*two_count + 0.9*three_count + 10000*four_count
     return material_score
 
 def heuristic(observation, player):
-    my_material = get_material_score(observation['observation'], player)
-    opponent_material = get_material_score(observation['observation'], 1-player)
+    my_material = get_material_score(observation['observation'], 1-player) + 0.1
+    opponent_material = get_material_score(observation['observation'], player)
     value = my_material - opponent_material
     return value
     
@@ -77,31 +77,40 @@ def possible_moves(observation):
             moves.append(i)
     return moves
 
-def minimax(observation, depth, termination, truncation, maximize_player, alpha, betha):
+def minimax(observation, depth, termination, truncation, maximize_player, alpha, beta):
     if depth == 0 or termination or truncation:
-        return heuristic(observation, int(not maximize_player))
-    
+        return None, heuristic(observation, int(not maximize_player))
+
     if maximize_player:
-        value = float('-inf')
+        best_move = None
+        best_value = float('-inf')
         for move in possible_moves(observation):
-            new_observation = make_move(observation, move, int(maximize_player))
-            value = max(value, minimax(new_observation, depth-1, termination, truncation, False, alpha, betha))
-            alpha = max(alpha, value)
-            observation = undo_move(observation, move, int(maximize_player))
-            if betha <= alpha:
+            new_observation = make_move(observation, move, int(not maximize_player))
+            _, value = minimax(new_observation, depth - 1, termination, truncation, False, alpha, beta)
+            observation = undo_move(observation, move, int(not maximize_player))
+            if value > best_value:
+                best_value = value
+                best_move = move
+            alpha = max(alpha, best_value)
+            if beta <= alpha:
                 break
-        return value
-    
+        return best_move, best_value
+
     else:
-        value = float('inf')
+        best_move = None
+        best_value = float('inf')
         for move in possible_moves(observation):
-            new_observation = make_move(observation, move, int(maximize_player))
-            value = min(value, minimax(new_observation, depth-1, termination, truncation, True, alpha, betha))
-            betha = min(betha, value)
-            observation = undo_move(observation, move, int(maximize_player))
-            if betha <= alpha:
+            new_observation = make_move(observation, move, int(not maximize_player))
+            _, value = minimax(new_observation, depth - 1, termination, truncation, True, alpha, beta)
+            observation = undo_move(observation, move, int(not maximize_player))
+            if value < best_value:
+                best_value = value
+                best_move = move
+            beta = min(beta, best_value)
+            if beta <= alpha:
                 break
-        return value
+        return best_move, best_value
+
     
 def make_move(observation, move, player):
     new_observation = observation.copy()
@@ -137,9 +146,15 @@ for agent in env.agent_iter():
     if termination or truncation:
         action = None
 
-    else:
         if agent == 'player_1':
-            action = minimax(observation, 6, termination, truncation, True, float('-inf'), float('inf'))
+            print("Player 2 wins!")
+        else:
+            print("Player 1 wins!")
+        break
+
+    else:
+        if agent == 'player_0':
+            action, _ = minimax(observation, 2, termination, truncation, True, float('-inf'), float('inf'))
         else:
             action = int(input("Enter your action(0-6): "))
 
