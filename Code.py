@@ -3,6 +3,7 @@ from pettingzoo.classic import connect_four_v3
 import numpy as np
 import time
 
+maxdepth = 3
 # Create Environment
 env = connect_four_v3.env(render_mode="human")
 env.reset()
@@ -50,6 +51,8 @@ def get_material_score(observation, player):
         anti_diagonal_counts.append(count_sublists(np.diagonal(np.fliplr(observation), offset=i)))
         anti_diagonal_counts.append(count_sublists(np.diagonal(np.fliplr(observation), offset=-i)))
 
+    diagonal_counts.pop(0)
+    anti_diagonal_counts.pop(0)
     for i, counts in enumerate(diagonal_counts):
         output += counts
 
@@ -62,7 +65,7 @@ def get_material_score(observation, player):
     four_count = output.count(4)
     
     # calculate the total material score for the player
-    material_score = 0.3*two_count + 0.9*three_count + 10000*four_count
+    material_score = 0.3*two_count + 0.9*three_count + 1000*four_count
     return material_score
 
 def heuristic(observation, player):
@@ -89,6 +92,8 @@ def minimax(observation, depth, termination, truncation, maximize_player, alpha,
             new_observation = make_move(observation, move, int(not maximize_player))
             _, value = minimax(new_observation, depth - 1, termination, truncation, False, alpha, beta)
             observation = undo_move(observation, move, int(not maximize_player))
+            if value < -500 and depth == maxdepth:
+                continue
             if value > best_value:
                 best_value = value
                 best_move = move
@@ -156,7 +161,7 @@ for agent in env.agent_iter():
 
     else:
         if agent == 'player_0':
-            action, _ = minimax(observation, 5, termination, truncation, True, float('-inf'), float('inf'))
+            action, _ = minimax(observation, maxdepth, termination, truncation, True, float('-inf'), float('inf'))
         else:
             action = int(input("Enter your action(0-6): "))
 
