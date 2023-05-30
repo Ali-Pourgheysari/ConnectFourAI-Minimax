@@ -4,7 +4,7 @@ import numpy as np
 import time
 import copy
 
-maxdepth = 3
+maxdepth = 5  # (maxdepth % depth == 2)
 # Create Environment
 env = connect_four_v3.env(render_mode="human")
 env.reset()
@@ -98,10 +98,6 @@ def minimax(observation, depth, termination, truncation, maximize_player, alpha,
             observation = undo_move(new_observation, move, int(not maximize_player))
             if termination:
                 return move, 1000
-            if value < -500 and depth == maxdepth:
-                continue
-            if value < -500 and depth != maxdepth:
-                break
             if value > best_value:
                 best_value = value
                 best_move = move
@@ -120,10 +116,6 @@ def minimax(observation, depth, termination, truncation, maximize_player, alpha,
             observation = undo_move(new_observation, move, int(not maximize_player))
             if termination:
                 return move, -1000
-            if value > 500 and depth == maxdepth - 1:
-                continue
-            if value > 500 and depth != maxdepth:
-                break
             if value < best_value:
                 best_value = value
                 best_move = move
