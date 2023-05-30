@@ -9,6 +9,7 @@ maxdepth = 5  # (maxdepth % depth == 2)
 env = connect_four_v3.env(render_mode="human")
 env.reset()
 
+# count sublists of 1 in the given list
 def count_sublists(lst):
     counts = []
     count = 0
@@ -26,6 +27,7 @@ def count_sublists(lst):
 
     return counts
 
+# calculate the value of each observation
 def get_material_score(observation, player, terminate=False):
     # initialize counts for each line length
     observation = observation[:, :, player]
@@ -71,12 +73,14 @@ def get_material_score(observation, player, terminate=False):
     material_score = 0.3*two_count + 0.9*three_count
     return material_score
 
+# heuristic function
 def heuristic(observation, player):
     my_material = get_material_score(observation['observation'], 1-player)
     opponent_material = get_material_score(observation['observation'], player)
     value = my_material - opponent_material
     return value
-    
+
+# get all possible moves
 def possible_moves(observation):
     moves = []
     for i in range(7):
@@ -84,23 +88,31 @@ def possible_moves(observation):
             moves.append(i)
     return moves
 
+# minimax algorithm
 def minimax(observation, depth, termination, truncation, maximize_player, alpha, beta):
     if depth == 0 or termination or truncation:
         return None, heuristic(observation, int(not maximize_player))
 
+    # maximize player
     if maximize_player:
         best_move = None
         best_value = float('-inf')
+        # for each possible move
         for move in possible_moves(observation):
             new_observation = make_move(observation, move, int(not maximize_player))
+            # check if the move results in a win
             termination = get_material_score(new_observation['observation'], int(not maximize_player), True)
+            # recursively call minimax
             _, value = minimax(new_observation, depth - 1, termination, truncation, False, alpha, beta)
             observation = undo_move(new_observation, move, int(not maximize_player))
+            # if the move results in a win, return the move and a high value
             if termination:
                 return move, 1000
+            # if the value is greater than the best value, update the best value and best move
             if value > best_value:
                 best_value = value
                 best_move = move
+            # update alpha
             alpha = max(alpha, best_value)
             if beta <= alpha:
                 break
@@ -109,45 +121,54 @@ def minimax(observation, depth, termination, truncation, maximize_player, alpha,
     else:
         best_move = None
         best_value = float('inf')
+        # for each possible move
         for move in possible_moves(observation):
             new_observation = make_move(observation, move, int(not maximize_player))
+            # check if the move results in a win
             termination = get_material_score(new_observation['observation'], int(not maximize_player), True)
+            # recursively call minimax
             _, value = minimax(new_observation, depth - 1, termination, truncation, True, alpha, beta)
             observation = undo_move(new_observation, move, int(not maximize_player))
+            # if the move results in a win, return the move and a high value
             if termination:
                 return move, -1000
+            # if the value is greater than the best value, update the best value and best move
             if value < best_value:
                 best_value = value
                 best_move = move
             beta = min(beta, best_value)
+            # update beta
             if beta <= alpha:
                 break
         return best_move, best_value
 
-    
+# make a move    
 def make_move(observation, move, player):
     new_observation = copy.deepcopy(observation)
 
+    # find the first empty space in the column
     for i in range(5, -1, -1):
         if all(elem == 0 for elem in new_observation['observation'][i, move]):
             new_observation['observation'][i][move][player] = 1
             break
-
+    # if the column is full, set the action mask to 0
     if any(elem == 1 for elem in new_observation['observation'][0][move]):
         new_observation['action_mask'][move] = 0
         
     
     return new_observation
 
-
+# undo a move
 def undo_move(observation, move, player):
     old_observation = copy.deepcopy(observation)
 
+    # find the first non-empty space in the column
     for i in range(6):
         if old_observation['observation'][i][move][player] == 1:
             old_observation['observation'][i][move][player] = 0
             break
 
+    # if the column is empty, set the action mask to 1
     if all(elem == 0 for elem in old_observation['observation'][0][move]):
         old_observation['action_mask'][move] = 1
         
@@ -169,6 +190,7 @@ for agent in env.agent_iter():
         break
 
     else:
+        # if it is the first move, play in the middle column
         if firstmove:
             action = 3
             firstmove = False
@@ -177,6 +199,7 @@ for agent in env.agent_iter():
         else:
             action = int(input("Enter your action(0-6): "))
 
+    # if the action equals None, the player resigns
     if action is None:
         print('player 1 resigns')
         break
