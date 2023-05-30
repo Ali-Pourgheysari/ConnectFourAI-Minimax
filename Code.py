@@ -126,7 +126,6 @@ def minimax(observation, depth, termination, truncation, maximize_player, alpha,
 
     
 def make_move(observation, move, player):
-    tempenv = copy.deepcopy(env)
     new_observation = copy.deepcopy(observation)
 
     for i in range(5, -1, -1):
