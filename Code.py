@@ -2,6 +2,7 @@
 from pettingzoo.classic import connect_four_v3
 import numpy as np
 import time
+import copy
 
 maxdepth = 3
 # Create Environment
@@ -94,6 +95,8 @@ def minimax(observation, depth, termination, truncation, maximize_player, alpha,
             observation = undo_move(observation, move, int(not maximize_player))
             if value < -500 and depth == maxdepth:
                 continue
+            if value < -500 and depth != maxdepth:
+                break
             if value > best_value:
                 best_value = value
                 best_move = move
@@ -109,6 +112,10 @@ def minimax(observation, depth, termination, truncation, maximize_player, alpha,
             new_observation = make_move(observation, move, int(not maximize_player))
             _, value = minimax(new_observation, depth - 1, termination, truncation, True, alpha, beta)
             observation = undo_move(observation, move, int(not maximize_player))
+            if value > 500 and depth == maxdepth - 1:
+                continue
+            if value > 500 and depth != maxdepth:
+                break
             if value < best_value:
                 best_value = value
                 best_move = move
@@ -119,7 +126,8 @@ def minimax(observation, depth, termination, truncation, maximize_player, alpha,
 
     
 def make_move(observation, move, player):
-    new_observation = observation.copy()
+    tempenv = copy.deepcopy(env)
+    new_observation = copy.deepcopy(observation)
 
     for i in range(5, -1, -1):
         if all(elem == 0 for elem in new_observation['observation'][i, move]):
@@ -129,6 +137,7 @@ def make_move(observation, move, player):
     if any(elem == 1 for elem in new_observation['observation'][0][move]):
         new_observation['action_mask'][move] = 0
         
+    
     return new_observation
 
 
@@ -145,6 +154,7 @@ def undo_move(observation, move, player):
         
     return old_observation
 
+firstmove = True
 for agent in env.agent_iter():
 
     observation, _, termination, truncation, info = env.last()
@@ -160,11 +170,17 @@ for agent in env.agent_iter():
         break
 
     else:
-        if agent == 'player_0':
+        if firstmove:
+            action = 3
+            firstmove = False
+        elif agent == 'player_0':
             action, _ = minimax(observation, maxdepth, termination, truncation, True, float('-inf'), float('inf'))
         else:
             action = int(input("Enter your action(0-6): "))
 
+    if action is None:
+        print("player 2 wins!")
+        break
     env.step(int(action))
 
 env.close()
