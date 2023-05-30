@@ -26,7 +26,7 @@ def count_sublists(lst):
 
     return counts
 
-def get_material_score(observation, player):
+def get_material_score(observation, player, terminate=False):
     # initialize counts for each line length
     observation = observation[:, :, player]
 
@@ -64,9 +64,11 @@ def get_material_score(observation, player):
     two_count = output.count(2)
     three_count = output.count(3)
     four_count = output.count(4)
-    
+
+    if terminate:
+        return bool(four_count)
     # calculate the total material score for the player
-    material_score = 0.3*two_count + 0.9*three_count + 1000*four_count
+    material_score = 0.3*two_count + 0.9*three_count
     return material_score
 
 def heuristic(observation, player):
@@ -91,8 +93,11 @@ def minimax(observation, depth, termination, truncation, maximize_player, alpha,
         best_value = float('-inf')
         for move in possible_moves(observation):
             new_observation = make_move(observation, move, int(not maximize_player))
+            termination = get_material_score(new_observation['observation'], int(not maximize_player), True)
             _, value = minimax(new_observation, depth - 1, termination, truncation, False, alpha, beta)
-            observation = undo_move(observation, move, int(not maximize_player))
+            observation = undo_move(new_observation, move, int(not maximize_player))
+            if termination:
+                return move, 1000
             if value < -500 and depth == maxdepth:
                 continue
             if value < -500 and depth != maxdepth:
@@ -110,8 +115,11 @@ def minimax(observation, depth, termination, truncation, maximize_player, alpha,
         best_value = float('inf')
         for move in possible_moves(observation):
             new_observation = make_move(observation, move, int(not maximize_player))
+            termination = get_material_score(new_observation['observation'], int(not maximize_player), True)
             _, value = minimax(new_observation, depth - 1, termination, truncation, True, alpha, beta)
-            observation = undo_move(observation, move, int(not maximize_player))
+            observation = undo_move(new_observation, move, int(not maximize_player))
+            if termination:
+                return move, -1000
             if value > 500 and depth == maxdepth - 1:
                 continue
             if value > 500 and depth != maxdepth:
@@ -141,7 +149,7 @@ def make_move(observation, move, player):
 
 
 def undo_move(observation, move, player):
-    old_observation = observation.copy()
+    old_observation = copy.deepcopy(observation)
 
     for i in range(6):
         if old_observation['observation'][i][move][player] == 1:
@@ -178,8 +186,9 @@ for agent in env.agent_iter():
             action = int(input("Enter your action(0-6): "))
 
     if action is None:
-        print("player 2 wins!")
+        print('player 1 resigns')
         break
+
     env.step(int(action))
 
 env.close()
