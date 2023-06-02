@@ -183,9 +183,9 @@ for agent in env.agent_iter():
         action = None
 
         if agent == 'player_1':
-            print("Player 2 wins!")
-        else:
             print("Player 1 wins!")
+        else:
+            print("Player 0 wins!")
         time.sleep(5)
         break
 
@@ -201,7 +201,7 @@ for agent in env.agent_iter():
 
     # if the action equals None, the player resigns
     if action is None:
-        print('player 1 resigns')
+        print('player 0 resigns')
         break
 
     env.step(int(action))
