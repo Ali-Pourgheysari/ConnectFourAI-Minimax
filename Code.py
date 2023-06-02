@@ -4,10 +4,11 @@ import numpy as np
 import time
 import copy
 
-maxdepth = 5  # (maxdepth % depth == 2)
+maxdepth = 5
 # Create Environment
 env = connect_four_v3.env(render_mode="human")
 env.reset()
+
 
 # count sublists of 1 in the given list
 def count_sublists(lst):
@@ -26,6 +27,7 @@ def count_sublists(lst):
         counts.append(count)
 
     return counts
+
 
 # calculate the value of each observation
 def get_material_score(observation, player, terminate=False):
@@ -73,12 +75,14 @@ def get_material_score(observation, player, terminate=False):
     material_score = 0.3*two_count + 0.9*three_count
     return material_score
 
+
 # heuristic function
 def heuristic(observation, player):
     my_material = get_material_score(observation['observation'], 1-player)
     opponent_material = get_material_score(observation['observation'], player)
     value = my_material - opponent_material
     return value
+
 
 # get all possible moves
 def possible_moves(observation):
@@ -87,6 +91,7 @@ def possible_moves(observation):
         if observation['action_mask'][i] == 1:
             moves.append(i)
     return moves
+
 
 # minimax algorithm
 def minimax(observation, depth, termination, truncation, maximize_player, alpha, beta):
@@ -142,6 +147,7 @@ def minimax(observation, depth, termination, truncation, maximize_player, alpha,
                 break
         return best_move, best_value
 
+
 # make a move    
 def make_move(observation, move, player):
     new_observation = copy.deepcopy(observation)
@@ -155,8 +161,8 @@ def make_move(observation, move, player):
     if any(elem == 1 for elem in new_observation['observation'][0][move]):
         new_observation['action_mask'][move] = 0
         
-    
     return new_observation
+
 
 # undo a move
 def undo_move(observation, move, player):
@@ -173,6 +179,7 @@ def undo_move(observation, move, player):
         old_observation['action_mask'][move] = 1
         
     return old_observation
+
 
 firstmove = True
 for agent in env.agent_iter():
