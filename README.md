@@ -41,4 +41,7 @@ The game is played on a 7x6 grid, and the columns are numbered from 0 to 6. The 
 
 The game continues until one player wins or the board is full (draw). If the AI player wins, the program prints "Player 0 wins!" and if the human player wins, it prints "Player 1 wins!" The program also handles the case when a player resigns from the game.
 
+ Read the complete documentation [HERE](Documentation.pdf).
+Also you can read [THIS](Code_review.pdf) code review for more details about the code.
+
 Enjoy playing Connect Four against the AI player! 🤖
